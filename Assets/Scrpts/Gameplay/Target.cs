@@ -33,6 +33,16 @@ public class Target : MonoBehaviour, IHittable
 
     public void SetColor(Color color) => rend.material.color = color;
 
+    public static void RefreshAllColors(Color color)
+    {
+        Target[] targets = FindObjectsByType<Target>(FindObjectsSortMode.None);
+
+        foreach (Target target in targets)
+        {
+            target.SetColor(color);
+        }
+    }
+
     public void SetLifetime(float seconds) => lifetime = seconds;
 
     public void SetMotion(Vector2 direction, float speed, bool bounceOnWalls, Rect movementArea)

@@ -99,6 +99,8 @@ public class SettingsPanel : MonoBehaviour
         s.wallColor = wallColor.Value;
         s.backgroundColor = backgroundColor.Value;
 
+        Target.RefreshAllColors(s.targetColor);
+
         SettingsManager.Save();
         SettingsManager.ApplyResolution();
     }
@@ -126,8 +128,26 @@ public class SettingsPanel : MonoBehaviour
     private static string FormatSensitivity(float value) =>
         value.ToString("0.##", CultureInfo.InvariantCulture);
 
+    
     private void BuildResolutionList()
     {
+        Debug.Log(
+            $"SettingsPanel attivo: {gameObject.name} | " +
+            $"Scena: {gameObject.scene.name} | " +
+            $"Dropdown: {(resolutionDropdown == null ? "NULL" : resolutionDropdown.name)}",
+            this
+        );
+
+        if (resolutionDropdown == null)
+        {
+            Debug.LogError(
+                $"Resolution Dropdown NULL nell'istanza '{gameObject.name}' " +
+                $"della scena '{gameObject.scene.name}'.",
+                this
+            );
+            return;
+        }
+
         resolutions.Clear();
         List<string> options = new List<string>();
 
@@ -143,4 +163,5 @@ public class SettingsPanel : MonoBehaviour
         resolutionDropdown.ClearOptions();
         resolutionDropdown.AddOptions(options);
     }
+
 }
