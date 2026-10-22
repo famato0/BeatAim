@@ -1,9 +1,11 @@
+
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ColorField : MonoBehaviour
 {
+    [Header("Color field")]
     [SerializeField] private TMP_InputField hexInput;
     [SerializeField] private Image swatch;
 
@@ -11,23 +13,58 @@ public class ColorField : MonoBehaviour
 
     private void Awake()
     {
-        hexInput.onEndEdit.AddListener(OnEndEdit);
+        hexInput.onEndEdit.AddListener(OnHexEndEdit);
+    }
+
+    private void OnEnable()
+    {
+        if (hexInput != null && swatch != null)
+            RefreshFromInput();
     }
 
     public void SetColor(Color color)
     {
         Value = color;
-        swatch.color = color;
-        hexInput.SetTextWithoutNotify("#" + ColorUtility.ToHtmlStringRGB(color));
+
+        if (hexInput != null)
+            hexInput.SetTextWithoutNotify(ColorUtility.ToHtmlStringRGB(color));
+
+        RefreshSwatch();
     }
 
-    private void OnEndEdit(string text)
+    private void OnHexEndEdit(string text)
     {
-        if (!text.StartsWith("#")) text = "#" + text;
+        RefreshFromInput();
+    }
 
-        if (ColorUtility.TryParseHtmlString(text, out Color parsed))
-            SetColor(parsed);
+    private void RefreshFromInput()
+    {
+        if (hexInput == null || swatch == null)
+            return;
+
+        string hex = hexInput.text.Trim();
+
+        if (hex.StartsWith("#"))
+            hex = hex.Substring(1);
+
+        if (hex.Length == 6 &&
+            ColorUtility.TryParseHtmlString("#" + hex, out Color color))
+        {
+            Value = color;
+            RefreshSwatch();
+            hexInput.SetTextWithoutNotify(hex.ToUpperInvariant());
+        }
         else
-            SetColor(Value); // input non valido: ripristina l'ultimo colore buono
+        {
+            // Ripristina l'ultimo colore valido se il testo non è valido.
+            hexInput.SetTextWithoutNotify(ColorUtility.ToHtmlStringRGB(Value));
+            RefreshSwatch();
+        }
+    }
+
+    private void RefreshSwatch()
+    {
+        if (swatch != null)
+            swatch.color = Value;
     }
 }

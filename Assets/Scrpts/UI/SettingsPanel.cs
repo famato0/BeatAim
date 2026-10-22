@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using SFB;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +14,9 @@ public class SettingsPanel : MonoBehaviour
     [SerializeField] private TMP_Dropdown resolutionDropdown;
     [SerializeField] private Toggle fullscreenToggle;
 
+    [Header("Suono click")]
+    [SerializeField] private TMP_Text clickSoundLabel;
+
     [Header("Colori")]
     [SerializeField] private ColorField crosshairColor;
     [SerializeField] private ColorField targetColor;
@@ -19,45 +24,30 @@ public class SettingsPanel : MonoBehaviour
     [SerializeField] private ColorField wallColor;
     [SerializeField] private ColorField backgroundColor;
 
-    [Header("Sensibilità")]
-    [SerializeField] private float minSensitivity = 0.01f;
-    [SerializeField] private float maxSensitivity = 100f;
-
     private readonly List<Vector2Int> resolutions = new List<Vector2Int>();
+    private string pendingSoundPath = "";
 
     private void Awake()
     {
         BuildResolutionList();
-
-        sensitivityInput.contentType = TMP_InputField.ContentType.DecimalNumber;
-        sensitivityInput.onEndEdit.AddListener(OnSensitivityEndEdit);
     }
 
-    // Ogni volta che il pannello si apre, mostra i valori salvati
-    // (scarta modifiche non salvate).
     private void OnEnable()
     {
         GameSettings s = SettingsManager.Current;
 
         nameInput.text = s.playerName;
-        sensitivityInput.SetTextWithoutNotify(
-            s.sensitivity.ToString("F2", CultureInfo.InvariantCulture));
-
+        sensitivityInput.text = FormatSensitivity(s.sensitivity);
         fullscreenToggle.isOn = s.fullscreen;
 
-        int width = s.resolutionWidth > 0
-            ? s.resolutionWidth
-            : Screen.currentResolution.width;
-
-        int height = s.resolutionHeight > 0
-            ? s.resolutionHeight
-            : Screen.currentResolution.height;
-
-        int index = resolutions.FindIndex(
-            r => r.x == width && r.y == height);
-
+        int width = s.resolutionWidth > 0 ? s.resolutionWidth : Screen.currentResolution.width;
+        int height = s.resolutionHeight > 0 ? s.resolutionHeight : Screen.currentResolution.height;
+        int index = resolutions.FindIndex(r => r.x == width && r.y == height);
         resolutionDropdown.SetValueWithoutNotify(Mathf.Max(index, 0));
         resolutionDropdown.RefreshShownValue();
+
+        pendingSoundPath = s.clickSoundPath;
+        RefreshSoundLabel();
 
         crosshairColor.SetColor(s.crosshairColor);
         targetColor.SetColor(s.targetColor);
@@ -66,63 +56,42 @@ public class SettingsPanel : MonoBehaviour
         backgroundColor.SetColor(s.backgroundColor);
     }
 
-    private void OnSensitivityEndEdit(string input)
+    // Collegare su "On End Edit (String)" del campo sensibilità
+    public void OnSensitivityEndEdit(string text)
     {
-        if (!float.TryParse(
-                input,
-                NumberStyles.Float,
-                CultureInfo.InvariantCulture,
-                out float value))
-        {
-            RestoreSensitivityValue();
-            return;
-        }
-
-        value = Mathf.Clamp(value, minSensitivity, maxSensitivity);
-
-        sensitivityInput.SetTextWithoutNotify(
-            value.ToString("F2", CultureInfo.InvariantCulture));
+        sensitivityInput.SetTextWithoutNotify(FormatSensitivity(ParseSensitivity(text)));
     }
 
-    private void RestoreSensitivityValue()
+    public void PickClickSound()
     {
-        sensitivityInput.SetTextWithoutNotify(
-            SettingsManager.Current.sensitivity.ToString(
-                "F2", CultureInfo.InvariantCulture));
+        string[] paths = StandaloneFileBrowser.OpenFilePanel("Choose sound", "", "mp3,ogg", false);
+
+        if (paths.Length > 0 && !string.IsNullOrEmpty(paths[0]))
+        {
+            pendingSoundPath = paths[0];
+            RefreshSoundLabel();
+        }
+    }
+
+    public void ResetClickSound()
+    {
+        pendingSoundPath = "";
+        RefreshSoundLabel();
     }
 
     public void Save()
     {
         GameSettings s = SettingsManager.Current;
 
-        s.playerName = string.IsNullOrWhiteSpace(nameInput.text)
-            ? "Player1"
-            : nameInput.text.Trim();
-
-        if (float.TryParse(
-                sensitivityInput.text,
-                NumberStyles.Float,
-                CultureInfo.InvariantCulture,
-                out float sensitivity))
-        {
-            s.sensitivity = Mathf.Clamp(
-                sensitivity, minSensitivity, maxSensitivity);
-        }
-        else
-        {
-            s.sensitivity = Mathf.Clamp(
-                s.sensitivity, minSensitivity, maxSensitivity);
-        }
-
-        // Mantiene il campo sincronizzato con il valore effettivamente salvato.
-        sensitivityInput.SetTextWithoutNotify(
-            s.sensitivity.ToString("F2", CultureInfo.InvariantCulture));
-
+        s.playerName = string.IsNullOrWhiteSpace(nameInput.text) ? "Player1" : nameInput.text.Trim();
+        s.sensitivity = ParseSensitivity(sensitivityInput.text);
         s.fullscreen = fullscreenToggle.isOn;
 
         Vector2Int res = resolutions[resolutionDropdown.value];
         s.resolutionWidth = res.x;
         s.resolutionHeight = res.y;
+
+        s.clickSoundPath = pendingSoundPath;
 
         s.crosshairColor = crosshairColor.Value;
         s.targetColor = targetColor.Value;
@@ -134,6 +103,29 @@ public class SettingsPanel : MonoBehaviour
         SettingsManager.ApplyResolution();
     }
 
+    private void RefreshSoundLabel()
+    {
+        string soundName = string.IsNullOrEmpty(pendingSoundPath)
+            ? Path.GetFileName(SoundLibrary.ResolvePath(null))
+            : Path.GetFileName(pendingSoundPath);
+
+        clickSoundLabel.text = soundName;
+    }
+
+    // Accetta sia "1,5" (italiano) che "1.5"
+    private static float ParseSensitivity(string text)
+    {
+        text = text.Replace(',', '.');
+
+        if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+            value = 1f;
+
+        return Mathf.Clamp(value, GameSettings.MinSensitivity, GameSettings.MaxSensitivity);
+    }
+
+    private static string FormatSensitivity(float value) =>
+        value.ToString("0.##", CultureInfo.InvariantCulture);
+
     private void BuildResolutionList()
     {
         resolutions.Clear();
@@ -142,10 +134,7 @@ public class SettingsPanel : MonoBehaviour
         foreach (Resolution r in Screen.resolutions)
         {
             Vector2Int size = new Vector2Int(r.width, r.height);
-
-            // Screen.resolutions ripete la stessa size per ogni refresh rate.
-            if (resolutions.Contains(size))
-                continue;
+            if (resolutions.Contains(size)) continue;
 
             resolutions.Add(size);
             options.Add($"{r.width} x {r.height}");

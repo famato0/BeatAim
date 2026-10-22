@@ -5,11 +5,11 @@ public class MainMenuController : MonoBehaviour
 {
     [SerializeField] private GameObject mainPanel;
     [SerializeField] private GameObject modePanel;
+    [SerializeField] private GameObject freeplayPanel;
     [SerializeField] private GameObject settingsPanel;
 
     private void Start()
     {
-        // Tornando da una partita il cursore è ancora bloccato: lo liberiamo
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
@@ -19,9 +19,9 @@ public class MainMenuController : MonoBehaviour
 
     public void ShowMain() => Show(mainPanel);
     public void ShowModeSelect() => Show(modePanel);
+    public void ShowFreeplay() => Show(freeplayPanel);
     public void ShowSettings() => Show(settingsPanel);
 
-    public void PlayStandard() => SceneManager.LoadScene(SceneNames.Standard);
     public void PlayMusic() => SceneManager.LoadScene(SceneNames.Music);
 
     public void Quit()
@@ -37,6 +37,7 @@ public class MainMenuController : MonoBehaviour
     {
         mainPanel.SetActive(panel == mainPanel);
         modePanel.SetActive(panel == modePanel);
+        freeplayPanel.SetActive(panel == freeplayPanel);
         settingsPanel.SetActive(panel == settingsPanel);
     }
 }

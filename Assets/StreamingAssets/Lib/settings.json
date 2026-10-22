@@ -1,0 +1,13 @@
+{
+    "playerName": "Player1",
+    "sensitivity": 1,
+    "resolutionWidth": 0,
+    "resolutionHeight": 0,
+    "fullscreen": true,
+    "crosshairColor": { "r": 1, "g": 1, "b": 1, "a": 1 },
+    "targetColor": { "r": 1, "g": 0.25, "b": 0.25, "a": 1 },
+    "floorColor": { "r": 0.15, "g": 0.15, "b": 0.15, "a": 1 },
+    "wallColor": { "r": 0.35, "g": 0.35, "b": 0.4, "a": 1 },
+    "backgroundColor": { "r": 0.05, "g": 0.05, "b": 0.08, "a": 1 }
+    //"clickSoundPath": ""
+  }

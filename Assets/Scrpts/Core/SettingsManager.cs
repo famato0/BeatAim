@@ -6,8 +6,13 @@ public static class SettingsManager
 {
     private static GameSettings current;
 
-    private static string FilePath =>
+    // Copia dell'utente: scrivibile anche nel build
+    private static string UserFile =>
         Path.Combine(Application.persistentDataPath, "settings.json");
+
+    // Default distribuiti col gioco
+    private static string DefaultFile =>
+        Path.Combine(Application.streamingAssetsPath, "Lib", "settings.json");
 
     public static GameSettings Current
     {
@@ -20,28 +25,28 @@ public static class SettingsManager
 
     public static void Load()
     {
-        try
-        {
-            if (File.Exists(FilePath))
-                current = JsonUtility.FromJson<GameSettings>(File.ReadAllText(FilePath));
-        }
-        catch (Exception e)
-        {
-            Debug.LogWarning($"Impossibile leggere le impostazioni: {e.Message}");
-        }
-
-        current ??= new GameSettings();
+        current = ReadFile(UserFile) ?? ReadFile(DefaultFile) ?? new GameSettings();
+        current.sensitivity = Mathf.Clamp(current.sensitivity,
+            GameSettings.MinSensitivity, GameSettings.MaxSensitivity);
     }
 
     public static void Save()
     {
+        File.WriteAllText(UserFile, JsonUtility.ToJson(Current, true));
+    }
+
+    private static GameSettings ReadFile(string path)
+    {
+        if (!File.Exists(path)) return null;
+
         try
         {
-            File.WriteAllText(FilePath, JsonUtility.ToJson(Current, true));
+            return JsonUtility.FromJson<GameSettings>(File.ReadAllText(path));
         }
         catch (Exception e)
         {
-            Debug.LogWarning($"Impossibile salvare le impostazioni: {e.Message}");
+            Debug.LogWarning($"Impossibile leggere {path}: {e.Message}");
+            return null;
         }
     }
 

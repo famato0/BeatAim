@@ -3,13 +3,16 @@ using UnityEngine.InputSystem;
 
 public class PlayerLook : MonoBehaviour
 {
+    // Sensibilità 1 nelle impostazioni = il valore di prima
+    private const float BaseFactor = 0.1f;
+
     private float sensitivity;
     private float yaw;
     private float pitch;
 
     private void Start()
     {
-        sensitivity = SettingsManager.Current.sensitivity;
+        sensitivity = SettingsManager.Current.sensitivity * BaseFactor;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }

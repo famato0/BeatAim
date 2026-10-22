@@ -1,0 +1,16 @@
+
+{
+    "name": "Freeplay",
+    "type": "freeplay",
+    "maxTargets": 3,
+    "motion": {
+      "patterns": [],
+      "speed": 2,
+      "bounce": false
+    },
+    "despawn": {
+      "enabled": false,
+      "lifetime": 2
+    }
+  }
+  
